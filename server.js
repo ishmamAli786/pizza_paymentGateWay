@@ -6,6 +6,8 @@ const path=require('path');
 const expressLayout=require('express-ejs-layouts');
 const session=require('express-session');
 const flash= require('express-flash');
+const bodyParser=require('body-parser');
+const passport = require('passport');
 const MongoDbStore = require('connect-mongo')(session)
 const mongoose=require('mongoose');
 mongoose.connect('mongodb://localhost:27017/pizza_gateway', { useNewUrlParser: true, useUnifiedTopology: true,useCreateIndex:true,useFindAndModify:true })
@@ -18,11 +20,15 @@ const connection=mongoose.connection;
 const port=process.env.PORT || 3000;
 
 
+app.use(express.urlencoded({ extended: false }))
+
+
 ///Session Store
 let mongoStore=new MongoDbStore({
     mongooseConnection: connection,
     collection: 'sessions'
 })
+
 
 
 
@@ -35,8 +41,14 @@ app.use(session({
     cookie:{maxAge: 1000*60*60*24} /// 24 hours
 }))
 
-app.use(flash())
+//// Passport Config
+const passportInit = require('./app/config/passport');
+passportInit(passport)
+app.use(passport.initialize())
+app.use(passport.session())
 
+
+app.use(flash())
 
 
 /// Assets
@@ -47,6 +59,7 @@ app.use(express.json())
 /// Global MiddleWare
 app.use((req,res,next)=>{
     res.locals.session=req.session
+    res.locals.user = req.user
     next();
 })
 
